@@ -1,0 +1,27 @@
+name: Go + PostgreSQL
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
+      with:
+        stable: 'false'
+        go-version: '1.22.x'
+
+    - name: Publish Docker Image
+      env:
+         USERNAME: ${{ secrets.USERNAME }}
+         PASSWORD: ${{ secrets.PASSWORD }}
+         IMAGE_NAME: gopost
+      run: |
+          docker build -t "$IMAGE_NAME" .
+          echo "$PASSWORD" | docker login --username "$USERNAME" --password-stdin
+          TAG=${GITHUB_SHA::7}
+          docker tag "$IMAGE_NAME" "$USERNAME/${IMAGE_NAME}:${TAG}"
+          docker push "$USERNAME/${IMAGE_NAME}:${TAG}"
+          docker run --rm ${IMAGE_NAME}:latest
